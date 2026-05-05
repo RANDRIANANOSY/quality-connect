@@ -55,7 +55,9 @@ export interface Validation {
   status: "en attente" | "validé" | "rejeté" | "clôturé";
   date: string;
   amount?: number;
+  qualityScore?: number;
   comments: { id: string; author: string; text: string; date: string }[];
+  history: { id: string; action: string; author: string; motif?: string; notified?: boolean; date: string }[];
 }
 
 export type Severity = "faible" | "moyen" | "critique";
@@ -65,12 +67,19 @@ export interface Anomaly {
   type: string;
   category: "comptable" | "fiscal" | "social" | "juridique";
   dossier: string;
+  client?: string;
+  mission?: string;
   region: Region;
   severity: Severity;
   status: "ouverte" | "en cours" | "résolue";
   assignedTo: string;
   date: string;
+  startDate?: string;
+  endDate?: string;
   description: string;
+  attachments?: { id: string; name: string; size: string }[];
+  timeline?: { id: string; date: string; author: string; action: string }[];
+  comments?: { id: string; author: string; text: string; date: string }[];
 }
 
 export interface AuditLog {
