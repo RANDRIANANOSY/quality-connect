@@ -1,18 +1,31 @@
 import { useState } from "react";
-import { Check, X, Eye, MessageSquare, Lock, Search } from "lucide-react";
+import { Check, X, Eye, MessageSquare, Lock, Search, Bell, History, Sparkles } from "lucide-react";
 import { toast } from "sonner";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { Switch } from "@/components/ui/switch";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { StatusBadge } from "@/components/StatusBadge";
 import { format } from "date-fns";
 import { fr } from "date-fns/locale";
 import { store, REGIONS, Validation, uid, nowIso, notify, logAudit } from "@/data/store";
 import { useStore } from "@/data/useStore";
+
+type ActionType = "validé" | "rejeté" | "clôturé";
+
+const actionLabel: Record<ActionType, string> = {
+  validé: "Valider",
+  rejeté: "Rejeter",
+  clôturé: "Clôturer",
+};
+
+const scoreTone = (s?: number) => (s == null ? "neutral" : s >= 85 ? "success" : s >= 70 ? "warning" : "danger");
 
 export default function Validations() {
   useStore();
@@ -24,6 +37,9 @@ export default function Validations() {
   const PAGE_SIZE = 5;
   const [detail, setDetail] = useState<Validation | null>(null);
   const [comment, setComment] = useState("");
+  const [actionTarget, setActionTarget] = useState<{ v: Validation; action: ActionType } | null>(null);
+  const [motif, setMotif] = useState("");
+  const [notifyUser, setNotifyUser] = useState(true);
 
   const filtered = store.validations.filter((v) => {
     if (region !== "all" && v.region !== region) return false;
@@ -35,11 +51,32 @@ export default function Validations() {
   const pages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
   const slice = filtered.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
 
-  const update = (v: Validation, status: Validation["status"]) => {
-    v.status = status;
-    logAudit({ user: "Admin", action: `a ${status} la validation`, target: v.dossier, category: "validation" });
+  const lowQualityPending = store.validations.filter((v) => v.status === "en attente" && (v.qualityScore ?? 100) < 70).length;
+
+  const askAction = (v: Validation, action: ActionType) => {
+    setActionTarget({ v, action });
+    setMotif("");
+    setNotifyUser(true);
+  };
+
+  const confirmAction = () => {
+    if (!actionTarget) return;
+    if (!motif.trim()) {
+      toast.error("Le motif est obligatoire");
+      return;
+    }
+    const { v, action } = actionTarget;
+    v.status = action;
+    v.history = [
+      ...(v.history || []),
+      { id: uid(), action: actionLabel[action] + (action === "validé" ? "" : ""), author: "Admin", motif, notified: notifyUser, date: nowIso() },
+    ];
+    logAudit({ user: "Admin", action: `a ${action} la validation`, target: v.dossier, category: "validation" });
+    if (notifyUser) toast.success(`${v.sentBy} a été notifié`);
     notify();
-    toast.success(`Validation ${status}`);
+    toast.success(`Validation ${action}`);
+    setActionTarget(null);
+    if (detail && detail.id === v.id) setDetail({ ...v });
   };
 
   const addComment = () => {
@@ -61,8 +98,18 @@ export default function Validations() {
     <div className="space-y-6">
       <div>
         <h2 className="text-2xl font-display font-bold">Validation centralisée</h2>
-        <p className="text-sm text-muted-foreground">Approuvez, rejetez ou clôturez les écritures et audits.</p>
+        <p className="text-sm text-muted-foreground">Approuvez, rejetez ou clôturez avec motif obligatoire et traçabilité complète.</p>
       </div>
+
+      {lowQualityPending > 0 && (
+        <Alert className="border-warning/40 bg-warning/5">
+          <Sparkles className="h-4 w-4 text-warning" />
+          <AlertTitle className="text-warning">Alerte qualité</AlertTitle>
+          <AlertDescription>
+            {lowQualityPending} dossier(s) en attente avec un score qualité &lt; 70 — vérification approfondie recommandée.
+          </AlertDescription>
+        </Alert>
+      )}
 
       <div className="grid gap-3 sm:grid-cols-4">
         {[
@@ -131,6 +178,7 @@ export default function Validations() {
                   <TableHead>Type</TableHead>
                   <TableHead>Région</TableHead>
                   <TableHead>Envoyé par</TableHead>
+                  <TableHead>Score qualité</TableHead>
                   <TableHead>Date</TableHead>
                   <TableHead>Statut</TableHead>
                   <TableHead className="text-right">Actions</TableHead>
@@ -143,6 +191,9 @@ export default function Validations() {
                     <TableCell><StatusBadge tone="primary">{v.type}</StatusBadge></TableCell>
                     <TableCell><StatusBadge tone="info">{v.region}</StatusBadge></TableCell>
                     <TableCell>{v.sentBy}</TableCell>
+                    <TableCell>
+                      <StatusBadge tone={scoreTone(v.qualityScore)} dot>{v.qualityScore ?? "—"}{v.qualityScore != null ? "/100" : ""}</StatusBadge>
+                    </TableCell>
                     <TableCell className="text-xs">{format(new Date(v.date), "dd MMM", { locale: fr })}</TableCell>
                     <TableCell>
                       <StatusBadge tone={v.status === "validé" ? "success" : v.status === "rejeté" ? "danger" : v.status === "clôturé" ? "neutral" : "warning"} dot>{v.status}</StatusBadge>
@@ -152,18 +203,18 @@ export default function Validations() {
                         <Button variant="ghost" size="icon" onClick={() => setDetail(v)} title="Voir"><Eye className="h-4 w-4" /></Button>
                         {v.status === "en attente" && (
                           <>
-                            <Button variant="ghost" size="icon" onClick={() => update(v, "validé")} title="Valider"><Check className="h-4 w-4 text-success" /></Button>
-                            <Button variant="ghost" size="icon" onClick={() => update(v, "rejeté")} title="Rejeter"><X className="h-4 w-4 text-destructive" /></Button>
+                            <Button variant="ghost" size="icon" onClick={() => askAction(v, "validé")} title="Valider"><Check className="h-4 w-4 text-success" /></Button>
+                            <Button variant="ghost" size="icon" onClick={() => askAction(v, "rejeté")} title="Rejeter"><X className="h-4 w-4 text-destructive" /></Button>
                           </>
                         )}
                         {(v.status === "validé" || v.status === "rejeté") && (
-                          <Button variant="ghost" size="icon" onClick={() => update(v, "clôturé")} title="Clôturer"><Lock className="h-4 w-4" /></Button>
+                          <Button variant="ghost" size="icon" onClick={() => askAction(v, "clôturé")} title="Clôturer"><Lock className="h-4 w-4" /></Button>
                         )}
                       </div>
                     </TableCell>
                   </TableRow>
                 ))}
-                {slice.length === 0 && <TableRow><TableCell colSpan={7} className="text-center text-sm text-muted-foreground py-8">Aucune validation</TableCell></TableRow>}
+                {slice.length === 0 && <TableRow><TableCell colSpan={8} className="text-center text-sm text-muted-foreground py-8">Aucune validation</TableCell></TableRow>}
               </TableBody>
             </Table>
           </div>
@@ -180,22 +231,27 @@ export default function Validations() {
         </CardContent>
       </Card>
 
+      {/* Detail dialog */}
       <Dialog open={!!detail} onOpenChange={(o) => !o && setDetail(null)}>
-        <DialogContent className="max-w-xl">
+        <DialogContent className="max-w-2xl">
           <DialogHeader>
             <DialogTitle>{detail?.dossier}</DialogTitle>
             <DialogDescription>{detail?.type} · {detail?.region} · envoyé par {detail?.sentBy}</DialogDescription>
           </DialogHeader>
           {detail && (
-            <div className="space-y-4">
-              <div className="grid grid-cols-3 gap-3">
+            <div className="space-y-4 max-h-[70vh] overflow-y-auto pr-1">
+              <div className="grid grid-cols-4 gap-3">
                 <div className="rounded-lg border border-border p-3">
                   <div className="text-xs text-muted-foreground">Statut</div>
                   <StatusBadge tone={detail.status === "validé" ? "success" : detail.status === "rejeté" ? "danger" : detail.status === "clôturé" ? "neutral" : "warning"} dot>{detail.status}</StatusBadge>
                 </div>
                 <div className="rounded-lg border border-border p-3">
+                  <div className="text-xs text-muted-foreground">Score qualité</div>
+                  <StatusBadge tone={scoreTone(detail.qualityScore)} dot>{detail.qualityScore ?? "—"}</StatusBadge>
+                </div>
+                <div className="rounded-lg border border-border p-3">
                   <div className="text-xs text-muted-foreground">Montant</div>
-                  <div className="font-mono font-medium">{detail.amount?.toLocaleString("fr-FR") || "—"}</div>
+                  <div className="font-mono font-medium text-sm">{detail.amount?.toLocaleString("fr-FR") || "—"}</div>
                 </div>
                 <div className="rounded-lg border border-border p-3">
                   <div className="text-xs text-muted-foreground">Date</div>
@@ -205,9 +261,29 @@ export default function Validations() {
 
               <div>
                 <div className="flex items-center gap-1.5 text-sm font-semibold mb-2">
+                  <History className="h-4 w-4" /> Historique des validations ({detail.history?.length || 0})
+                </div>
+                <div className="relative pl-4 border-l border-border space-y-3">
+                  {(detail.history || []).map((h) => (
+                    <div key={h.id} className="relative">
+                      <span className="absolute -left-[21px] top-1.5 h-2 w-2 rounded-full bg-primary" />
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <span className="text-sm font-medium">{h.action}</span>
+                        {h.notified && <StatusBadge tone="info"><Bell className="h-3 w-3 mr-1" />Notifié</StatusBadge>}
+                      </div>
+                      <div className="text-xs text-muted-foreground">{h.author} · {format(new Date(h.date), "dd MMM yyyy HH:mm", { locale: fr })}</div>
+                      {h.motif && <div className="text-xs mt-1 italic text-muted-foreground">« {h.motif} »</div>}
+                    </div>
+                  ))}
+                  {(!detail.history || detail.history.length === 0) && <div className="text-xs text-muted-foreground">Aucun historique</div>}
+                </div>
+              </div>
+
+              <div>
+                <div className="flex items-center gap-1.5 text-sm font-semibold mb-2">
                   <MessageSquare className="h-4 w-4" /> Commentaires ({detail.comments.length})
                 </div>
-                <div className="space-y-2 max-h-48 overflow-y-auto scrollbar-thin">
+                <div className="space-y-2 max-h-40 overflow-y-auto">
                   {detail.comments.map((c) => (
                     <div key={c.id} className="rounded-lg bg-secondary/60 p-2.5">
                       <div className="flex items-baseline justify-between">
@@ -229,15 +305,51 @@ export default function Validations() {
           <DialogFooter className="gap-2">
             {detail?.status === "en attente" && (
               <>
-                <Button variant="outline" onClick={() => { update(detail, "rejeté"); setDetail(null); }}><X className="h-4 w-4 mr-2" />Rejeter</Button>
-                <Button onClick={() => { update(detail, "validé"); setDetail(null); }}><Check className="h-4 w-4 mr-2" />Valider</Button>
+                <Button variant="outline" onClick={() => askAction(detail, "rejeté")}><X className="h-4 w-4 mr-2" />Rejeter</Button>
+                <Button onClick={() => askAction(detail, "validé")}><Check className="h-4 w-4 mr-2" />Valider</Button>
               </>
             )}
             {detail && (detail.status === "validé" || detail.status === "rejeté") && (
-              <Button variant="outline" onClick={() => { update(detail, "clôturé"); setDetail(null); }}>
+              <Button variant="outline" onClick={() => askAction(detail, "clôturé")}>
                 <Lock className="h-4 w-4 mr-2" />Clôturer
               </Button>
             )}
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Motif modal */}
+      <Dialog open={!!actionTarget} onOpenChange={(o) => !o && setActionTarget(null)}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>
+              {actionTarget && actionLabel[actionTarget.action]} — {actionTarget?.v.dossier}
+            </DialogTitle>
+            <DialogDescription>
+              Indiquez un motif (obligatoire) pour assurer la traçabilité de cette action.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="grid gap-3">
+            <div className="grid gap-1.5">
+              <Label>Motif <span className="text-destructive">*</span></Label>
+              <Textarea
+                rows={4}
+                value={motif}
+                onChange={(e) => setMotif(e.target.value)}
+                placeholder="Ex: Bilan conforme aux normes IFRS, écritures équilibrées…"
+              />
+            </div>
+            <div className="flex items-center justify-between rounded-lg border border-border p-3">
+              <div>
+                <div className="text-sm font-medium flex items-center gap-1.5"><Bell className="h-4 w-4" />Notifier le collaborateur</div>
+                <div className="text-xs text-muted-foreground">{actionTarget?.v.sentBy} recevra une notification.</div>
+              </div>
+              <Switch checked={notifyUser} onCheckedChange={setNotifyUser} />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setActionTarget(null)}>Annuler</Button>
+            <Button onClick={confirmAction} disabled={!motif.trim()}>Confirmer</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>

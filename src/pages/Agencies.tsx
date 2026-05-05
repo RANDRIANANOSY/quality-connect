@@ -45,19 +45,38 @@ const empty: Omit<Agency, "id"> = {
   projects: [],
 };
 
+function perfScore(a: Agency) {
+  const projs = a.projects;
+  if (!projs.length) return 0;
+  const avg = projs.reduce((s, p) => s + p.progress, 0) / projs.length;
+  const penalty = projs.filter((p) => p.status === "retard").length * 10;
+  return Math.max(0, Math.min(100, Math.round(avg - penalty)));
+}
+
 export default function Agencies() {
   useStore();
   const [search, setSearch] = useState("");
   const [region, setRegion] = useState<string>("all");
   const [statusFilter, setStatusFilter] = useState<string>("all");
+  const [manager, setManager] = useState<string>("all");
+  const [perf, setPerf] = useState<string>("all");
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editing, setEditing] = useState<Agency | null>(null);
   const [form, setForm] = useState<Omit<Agency, "id">>(empty);
   const [deleteId, setDeleteId] = useState<string | null>(null);
 
+  const managers = Array.from(new Set(store.agencies.map((a) => a.manager)));
+
   const filtered = store.agencies.filter((a) => {
     if (region !== "all" && a.region !== region) return false;
     if (statusFilter !== "all" && a.status !== statusFilter) return false;
+    if (manager !== "all" && a.manager !== manager) return false;
+    if (perf !== "all") {
+      const s = perfScore(a);
+      if (perf === "high" && s < 75) return false;
+      if (perf === "mid" && (s < 50 || s >= 75)) return false;
+      if (perf === "low" && s >= 50) return false;
+    }
     if (search && !`${a.name} ${a.manager} ${a.location}`.toLowerCase().includes(search.toLowerCase())) return false;
     return true;
   });
@@ -151,11 +170,27 @@ export default function Agencies() {
               </SelectContent>
             </Select>
             <Select value={statusFilter} onValueChange={setStatusFilter}>
-              <SelectTrigger className="w-40"><SelectValue /></SelectTrigger>
+              <SelectTrigger className="w-36"><SelectValue /></SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">Tous statuts</SelectItem>
                 <SelectItem value="actif">Actif</SelectItem>
                 <SelectItem value="inactif">Inactif</SelectItem>
+              </SelectContent>
+            </Select>
+            <Select value={manager} onValueChange={setManager}>
+              <SelectTrigger className="w-44"><SelectValue placeholder="Responsable" /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Tous responsables</SelectItem>
+                {managers.map((m) => <SelectItem key={m} value={m}>{m}</SelectItem>)}
+              </SelectContent>
+            </Select>
+            <Select value={perf} onValueChange={setPerf}>
+              <SelectTrigger className="w-40"><SelectValue placeholder="Performance" /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Toute performance</SelectItem>
+                <SelectItem value="high">Élevée (≥75)</SelectItem>
+                <SelectItem value="mid">Moyenne (50-74)</SelectItem>
+                <SelectItem value="low">Faible (&lt;50)</SelectItem>
               </SelectContent>
             </Select>
           </div>
@@ -168,12 +203,16 @@ export default function Agencies() {
                   <TableHead>Région</TableHead>
                   <TableHead className="text-right">Dossiers</TableHead>
                   <TableHead>Responsable</TableHead>
+                  <TableHead className="w-40">Performance</TableHead>
                   <TableHead>Statut</TableHead>
                   <TableHead className="text-right">Actions</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {filtered.map((a) => (
+                {filtered.map((a) => {
+                  const score = perfScore(a);
+                  const tone = score >= 75 ? "success" : score >= 50 ? "warning" : "danger";
+                  return (
                   <TableRow key={a.id} className="hover:bg-secondary/40">
                     <TableCell>
                       <div className="font-medium">{a.name}</div>
@@ -182,6 +221,14 @@ export default function Agencies() {
                     <TableCell><StatusBadge tone="info">{a.region}</StatusBadge></TableCell>
                     <TableCell className="text-right font-mono">{a.dossiers}</TableCell>
                     <TableCell>{a.manager}</TableCell>
+                    <TableCell>
+                      <div className="flex items-center gap-2">
+                        <div className="h-1.5 flex-1 rounded-full bg-secondary overflow-hidden">
+                          <div className={`h-full ${tone === "success" ? "bg-success" : tone === "warning" ? "bg-warning" : "bg-destructive"}`} style={{ width: `${score}%` }} />
+                        </div>
+                        <span className="text-xs font-mono w-9 text-right">{score}%</span>
+                      </div>
+                    </TableCell>
                     <TableCell>
                       <StatusBadge tone={a.status === "actif" ? "success" : "neutral"} dot>{a.status}</StatusBadge>
                     </TableCell>
@@ -199,9 +246,10 @@ export default function Agencies() {
                       </div>
                     </TableCell>
                   </TableRow>
-                ))}
+                  );
+                })}
                 {filtered.length === 0 && (
-                  <TableRow><TableCell colSpan={6} className="text-center text-sm text-muted-foreground py-8">Aucune agence ne correspond aux filtres.</TableCell></TableRow>
+                  <TableRow><TableCell colSpan={7} className="text-center text-sm text-muted-foreground py-8">Aucune agence ne correspond aux filtres.</TableCell></TableRow>
                 )}
               </TableBody>
             </Table>
