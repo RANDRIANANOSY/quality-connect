@@ -45,19 +45,38 @@ const empty: Omit<Agency, "id"> = {
   projects: [],
 };
 
+function perfScore(a: Agency) {
+  const projs = a.projects;
+  if (!projs.length) return 0;
+  const avg = projs.reduce((s, p) => s + p.progress, 0) / projs.length;
+  const penalty = projs.filter((p) => p.status === "retard").length * 10;
+  return Math.max(0, Math.min(100, Math.round(avg - penalty)));
+}
+
 export default function Agencies() {
   useStore();
   const [search, setSearch] = useState("");
   const [region, setRegion] = useState<string>("all");
   const [statusFilter, setStatusFilter] = useState<string>("all");
+  const [manager, setManager] = useState<string>("all");
+  const [perf, setPerf] = useState<string>("all");
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editing, setEditing] = useState<Agency | null>(null);
   const [form, setForm] = useState<Omit<Agency, "id">>(empty);
   const [deleteId, setDeleteId] = useState<string | null>(null);
 
+  const managers = Array.from(new Set(store.agencies.map((a) => a.manager)));
+
   const filtered = store.agencies.filter((a) => {
     if (region !== "all" && a.region !== region) return false;
     if (statusFilter !== "all" && a.status !== statusFilter) return false;
+    if (manager !== "all" && a.manager !== manager) return false;
+    if (perf !== "all") {
+      const s = perfScore(a);
+      if (perf === "high" && s < 75) return false;
+      if (perf === "mid" && (s < 50 || s >= 75)) return false;
+      if (perf === "low" && s >= 50) return false;
+    }
     if (search && !`${a.name} ${a.manager} ${a.location}`.toLowerCase().includes(search.toLowerCase())) return false;
     return true;
   });
