@@ -203,12 +203,16 @@ export default function Agencies() {
                   <TableHead>Région</TableHead>
                   <TableHead className="text-right">Dossiers</TableHead>
                   <TableHead>Responsable</TableHead>
+                  <TableHead className="w-40">Performance</TableHead>
                   <TableHead>Statut</TableHead>
                   <TableHead className="text-right">Actions</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {filtered.map((a) => (
+                {filtered.map((a) => {
+                  const score = perfScore(a);
+                  const tone = score >= 75 ? "success" : score >= 50 ? "warning" : "danger";
+                  return (
                   <TableRow key={a.id} className="hover:bg-secondary/40">
                     <TableCell>
                       <div className="font-medium">{a.name}</div>
@@ -217,6 +221,14 @@ export default function Agencies() {
                     <TableCell><StatusBadge tone="info">{a.region}</StatusBadge></TableCell>
                     <TableCell className="text-right font-mono">{a.dossiers}</TableCell>
                     <TableCell>{a.manager}</TableCell>
+                    <TableCell>
+                      <div className="flex items-center gap-2">
+                        <div className="h-1.5 flex-1 rounded-full bg-secondary overflow-hidden">
+                          <div className={`h-full ${tone === "success" ? "bg-success" : tone === "warning" ? "bg-warning" : "bg-destructive"}`} style={{ width: `${score}%` }} />
+                        </div>
+                        <span className="text-xs font-mono w-9 text-right">{score}%</span>
+                      </div>
+                    </TableCell>
                     <TableCell>
                       <StatusBadge tone={a.status === "actif" ? "success" : "neutral"} dot>{a.status}</StatusBadge>
                     </TableCell>
@@ -234,9 +246,10 @@ export default function Agencies() {
                       </div>
                     </TableCell>
                   </TableRow>
-                ))}
+                  );
+                })}
                 {filtered.length === 0 && (
-                  <TableRow><TableCell colSpan={6} className="text-center text-sm text-muted-foreground py-8">Aucune agence ne correspond aux filtres.</TableCell></TableRow>
+                  <TableRow><TableCell colSpan={7} className="text-center text-sm text-muted-foreground py-8">Aucune agence ne correspond aux filtres.</TableCell></TableRow>
                 )}
               </TableBody>
             </Table>
