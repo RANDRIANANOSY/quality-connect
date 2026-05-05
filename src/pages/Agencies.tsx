@@ -170,11 +170,27 @@ export default function Agencies() {
               </SelectContent>
             </Select>
             <Select value={statusFilter} onValueChange={setStatusFilter}>
-              <SelectTrigger className="w-40"><SelectValue /></SelectTrigger>
+              <SelectTrigger className="w-36"><SelectValue /></SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">Tous statuts</SelectItem>
                 <SelectItem value="actif">Actif</SelectItem>
                 <SelectItem value="inactif">Inactif</SelectItem>
+              </SelectContent>
+            </Select>
+            <Select value={manager} onValueChange={setManager}>
+              <SelectTrigger className="w-44"><SelectValue placeholder="Responsable" /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Tous responsables</SelectItem>
+                {managers.map((m) => <SelectItem key={m} value={m}>{m}</SelectItem>)}
+              </SelectContent>
+            </Select>
+            <Select value={perf} onValueChange={setPerf}>
+              <SelectTrigger className="w-40"><SelectValue placeholder="Performance" /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Toute performance</SelectItem>
+                <SelectItem value="high">Élevée (≥75)</SelectItem>
+                <SelectItem value="mid">Moyenne (50-74)</SelectItem>
+                <SelectItem value="low">Faible (&lt;50)</SelectItem>
               </SelectContent>
             </Select>
           </div>
