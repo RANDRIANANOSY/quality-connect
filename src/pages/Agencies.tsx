@@ -257,6 +257,77 @@ export default function Agencies() {
         </CardContent>
       </Card>
 
+      <Card>
+        <CardHeader>
+          <CardTitle>Dossiers Audit Fiscal (Version Professionnelle)</CardTitle>
+          <CardDescription>Liste de tous les dossiers liés aux audits fiscaux professionnels.</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="rounded-lg border border-border overflow-hidden">
+            <Table>
+              <TableHeader>
+                <TableRow className="bg-secondary/50">
+                  <TableHead>Dossier</TableHead>
+                  <TableHead>Client</TableHead>
+                  <TableHead>Région</TableHead>
+                  <TableHead>Agences</TableHead>
+                  <TableHead>Statut</TableHead>
+                  <TableHead className="text-right">Taille</TableHead>
+                  <TableHead>Propriétaire</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {store.dossiers
+                  .filter((d) => d.name.toLowerCase().includes("audit fiscal") || d.name.toLowerCase().includes("audit"))
+                  .map((d) => (
+                    <TableRow key={d.id} className="hover:bg-secondary/40">
+                      <TableCell className="font-medium">{d.name}</TableCell>
+                      <TableCell>{d.client}</TableCell>
+                      <TableCell><StatusBadge tone="info">{d.region}</StatusBadge></TableCell>
+                      <TableCell className="text-sm">
+                        {d.agencies.length > 0 ? (
+                          <div className="flex flex-wrap gap-1">
+                            {d.agencies.slice(0, 2).map((agId) => {
+                              const agency = store.agencies.find((a) => a.id === agId);
+                              return agency ? (
+                                <StatusBadge key={agId} tone="neutral" className="text-xs">
+                                  {agency.name}
+                                </StatusBadge>
+                              ) : null;
+                            })}
+                            {d.agencies.length > 2 && (
+                              <span className="text-xs text-muted-foreground">+{d.agencies.length - 2} autres</span>
+                            )}
+                          </div>
+                        ) : (
+                          <span className="text-muted-foreground">Aucune</span>
+                        )}
+                      </TableCell>
+                      <TableCell>
+                        <StatusBadge tone={
+                          d.status === "partagé" ? "success" :
+                          d.status === "privé" ? "neutral" : "warning"
+                        } dot>
+                          {d.status}
+                        </StatusBadge>
+                      </TableCell>
+                      <TableCell className="text-right font-mono text-sm">{d.size}</TableCell>
+                      <TableCell className="text-sm">{d.owner}</TableCell>
+                    </TableRow>
+                  ))}
+                {store.dossiers.filter((d) => d.name.toLowerCase().includes("audit fiscal") || d.name.toLowerCase().includes("audit")).length === 0 && (
+                  <TableRow>
+                    <TableCell colSpan={7} className="text-center text-sm text-muted-foreground py-8">
+                      Aucun dossier d'audit fiscal trouvé.
+                    </TableCell>
+                  </TableRow>
+                )}
+              </TableBody>
+            </Table>
+          </div>
+        </CardContent>
+      </Card>
+
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
         <DialogContent className="max-w-lg">
           <DialogHeader>
