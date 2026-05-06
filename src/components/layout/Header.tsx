@@ -21,7 +21,6 @@ const labels: Record<string, string> = {
   "/": "Vue d'ensemble",
   "/agencies": "Multi-agences",
   "/dossiers": "Dossiers partagés",
-  "/messages": "Communication",
   "/validations": "Validations",
   "/quality": "Contrôle qualité",
   "/anomalies": "Anomalies",

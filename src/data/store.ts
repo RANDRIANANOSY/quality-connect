@@ -31,7 +31,34 @@ export interface Agency {
   createdAt: string;
   members: { id: string; name: string; role: string; avatar?: string }[];
   clients: { id: string; name: string; siret: string; status: "actif" | "prospect"; revenue: number }[];
-  projects: { id: string; name: string; client: string; progress: number; deadline: string; status: "en cours" | "terminé" | "retard" }[];
+  projects: Project[];
+}
+
+export interface Project {
+  id: string;
+  name: string;
+  client: string;
+  startDate: string;
+  endDate: string;
+  progress: number;
+  status: "en cours" | "terminé" | "retard";
+  dossiers: {
+    total: number;
+    toUse: string[];
+    received: string[];
+    pending: string[];
+    late: string[];
+    missing: string[]; // after 5 days
+  };
+  tasks: {
+    id: string;
+    name: string;
+    assignedTo: string;
+    status: "à faire" | "en cours" | "terminé";
+    dueDate: string;
+  }[];
+  anomalies: string[]; // anomaly ids
+  attachments: { id: string; name: string; type: string; size: string }[];
 }
 
 export interface Dossier {
@@ -154,9 +181,83 @@ export const store: Store = {
         { id: "c3", name: "Vanille Export", siret: "MG-003-2022", status: "prospect", revenue: 320000 },
       ],
       projects: [
-        { id: "p1", name: "Bilan annuel 2025", client: "SARL Océan Indien", progress: 78, deadline: daysAgo(-12), status: "en cours" },
-        { id: "p2", name: "Audit fiscal", client: "Port Toamasina SA", progress: 45, deadline: daysAgo(-30), status: "en cours" },
-        { id: "p3", name: "Déclaration TVA T4", client: "Vanille Export", progress: 100, deadline: daysAgo(8), status: "terminé" },
+        {
+          id: "p1",
+          name: "Bilan annuel 2025",
+          client: "SARL Océan Indien",
+          startDate: daysAgo(60),
+          endDate: daysAgo(-12),
+          progress: 78,
+          status: "en cours",
+          dossiers: {
+            total: 15,
+            toUse: ["Dossier 1", "Dossier 2"],
+            received: ["Dossier 3", "Dossier 4"],
+            pending: ["Dossier 5"],
+            late: ["Dossier 6"],
+            missing: []
+          },
+          tasks: [
+            { id: "t1", name: "Collecte documents", assignedTo: "Hery Rasolofo", status: "terminé", dueDate: daysAgo(50) },
+            { id: "t2", name: "Analyse comptable", assignedTo: "Voahangy R.", status: "en cours", dueDate: daysAgo(-5) },
+            { id: "t3", name: "Validation bilan", assignedTo: "Jean Rakoto", status: "à faire", dueDate: daysAgo(-10) }
+          ],
+          anomalies: ["an1"],
+          attachments: [
+            { id: "att1", name: "Bilan_2025.pdf", type: "pdf", size: "2.5 MB" },
+            { id: "att2", name: "Annexes.xlsx", type: "xlsx", size: "1.2 MB" }
+          ]
+        },
+        {
+          id: "p2",
+          name: "Audit fiscal",
+          client: "Port Toamasina SA",
+          startDate: daysAgo(90),
+          endDate: daysAgo(-30),
+          progress: 45,
+          status: "en cours",
+          dossiers: {
+            total: 22,
+            toUse: ["Audit Doc 1"],
+            received: ["Audit Doc 2", "Audit Doc 3"],
+            pending: ["Audit Doc 4", "Audit Doc 5"],
+            late: [],
+            missing: ["Audit Doc 6"]
+          },
+          tasks: [
+            { id: "t4", name: "Révision fiscale", assignedTo: "Hery Rasolofo", status: "en cours", dueDate: daysAgo(-15) },
+            { id: "t5", name: "Contrôle TVA", assignedTo: "Voahangy R.", status: "terminé", dueDate: daysAgo(10) }
+          ],
+          anomalies: [],
+          attachments: [
+            { id: "att3", name: "Rapport_Audit.pdf", type: "pdf", size: "5.1 MB" }
+          ]
+        },
+        {
+          id: "p3",
+          name: "Déclaration TVA T4",
+          client: "Vanille Export",
+          startDate: daysAgo(30),
+          endDate: daysAgo(8),
+          progress: 100,
+          status: "terminé",
+          dossiers: {
+            total: 8,
+            toUse: [],
+            received: ["TVA Q4"],
+            pending: [],
+            late: [],
+            missing: []
+          },
+          tasks: [
+            { id: "t6", name: "Saisie TVA", assignedTo: "Mamy A.", status: "terminé", dueDate: daysAgo(15) },
+            { id: "t7", name: "Validation", assignedTo: "Jean Rakoto", status: "terminé", dueDate: daysAgo(10) }
+          ],
+          anomalies: [],
+          attachments: [
+            { id: "att4", name: "Declaration_TVA.pdf", type: "pdf", size: "0.8 MB" }
+          ]
+        },
       ],
     },
     {
@@ -183,8 +284,58 @@ export const store: Store = {
         { id: "c6", name: "Telma Group", siret: "MG-103-2015", status: "actif", revenue: 12500000 },
       ],
       projects: [
-        { id: "p4", name: "Consolidation Telma", client: "Telma Group", progress: 62, deadline: daysAgo(-20), status: "en cours" },
-        { id: "p5", name: "Paie mensuelle", client: "Hôtel Colbert", progress: 90, deadline: daysAgo(2), status: "retard" },
+        {
+          id: "p4",
+          name: "Consolidation Telma",
+          client: "Telma Group",
+          startDate: daysAgo(45),
+          endDate: daysAgo(-20),
+          progress: 62,
+          status: "en cours",
+          dossiers: {
+            total: 35,
+            toUse: ["Cons Doc 1", "Cons Doc 2"],
+            received: ["Cons Doc 3", "Cons Doc 4", "Cons Doc 5"],
+            pending: ["Cons Doc 6"],
+            late: ["Cons Doc 7"],
+            missing: []
+          },
+          tasks: [
+            { id: "t8", name: "Collecte filiales", assignedTo: "Tojo Ramanantsoa", status: "terminé", dueDate: daysAgo(30) },
+            { id: "t9", name: "Consolidation comptes", assignedTo: "Naina B.", status: "en cours", dueDate: daysAgo(-10) },
+            { id: "t10", name: "Rapport final", assignedTo: "Marie Andria", status: "à faire", dueDate: daysAgo(-15) }
+          ],
+          anomalies: ["an2"],
+          attachments: [
+            { id: "att5", name: "Consolidation_2025.xlsx", type: "xlsx", size: "8.3 MB" },
+            { id: "att6", name: "Rapport_Cons.pdf", type: "pdf", size: "3.2 MB" }
+          ]
+        },
+        {
+          id: "p5",
+          name: "Paie mensuelle",
+          client: "Hôtel Colbert",
+          startDate: daysAgo(10),
+          endDate: daysAgo(2),
+          progress: 90,
+          status: "retard",
+          dossiers: {
+            total: 12,
+            toUse: ["Paie Jan"],
+            received: ["Paie Feb", "Paie Mar"],
+            pending: [],
+            late: ["Paie Apr"],
+            missing: ["Paie May"]
+          },
+          tasks: [
+            { id: "t11", name: "Saisie paie", assignedTo: "Fanja R.", status: "terminé", dueDate: daysAgo(5) },
+            { id: "t12", name: "Validation DSN", assignedTo: "Patrick H.", status: "en cours", dueDate: daysAgo(1) }
+          ],
+          anomalies: ["an3", "an4"],
+          attachments: [
+            { id: "att7", name: "Bulletin_Paie.pdf", type: "pdf", size: "1.5 MB" }
+          ]
+        },
       ],
     },
     {
@@ -206,7 +357,31 @@ export const store: Store = {
         { id: "c7", name: "Pêcheries du Nord-Ouest", siret: "MG-201-2021", status: "actif", revenue: 980000 },
       ],
       projects: [
-        { id: "p6", name: "Bilan 2025", client: "Pêcheries du Nord-Ouest", progress: 30, deadline: daysAgo(-45), status: "en cours" },
+        {
+          id: "p6",
+          name: "Bilan 2025",
+          client: "Pêcheries du Nord-Ouest",
+          startDate: daysAgo(75),
+          endDate: daysAgo(-45),
+          progress: 30,
+          status: "en cours",
+          dossiers: {
+            total: 18,
+            toUse: ["Bilan Doc 1"],
+            received: ["Bilan Doc 2"],
+            pending: ["Bilan Doc 3", "Bilan Doc 4"],
+            late: [],
+            missing: ["Bilan Doc 5"]
+          },
+          tasks: [
+            { id: "t13", name: "Collecte pièces", assignedTo: "Lala R.", status: "en cours", dueDate: daysAgo(-20) },
+            { id: "t14", name: "Établissement bilan", assignedTo: "Hery Razafy", status: "à faire", dueDate: daysAgo(-30) }
+          ],
+          anomalies: [],
+          attachments: [
+            { id: "att8", name: "Pieces_Comptables.zip", type: "zip", size: "4.7 MB" }
+          ]
+        },
       ],
     },
     {
@@ -227,7 +402,28 @@ export const store: Store = {
         { id: "c8", name: "Coopérative Vignoble", siret: "MG-301-2022", status: "actif", revenue: 450000 },
       ],
       projects: [
-        { id: "p7", name: "Audit coop", client: "Coopérative Vignoble", progress: 10, deadline: daysAgo(-60), status: "en cours" },
+        {
+          id: "p7",
+          name: "Audit coop",
+          client: "Coopérative Vignoble",
+          startDate: daysAgo(90),
+          endDate: daysAgo(-60),
+          progress: 10,
+          status: "en cours",
+          dossiers: {
+            total: 25,
+            toUse: ["Audit Coop 1", "Audit Coop 2"],
+            received: [],
+            pending: ["Audit Coop 3", "Audit Coop 4", "Audit Coop 5"],
+            late: ["Audit Coop 6"],
+            missing: ["Audit Coop 7", "Audit Coop 8"]
+          },
+          tasks: [
+            { id: "t15", name: "Plan d'audit", assignedTo: "Soa Rabe", status: "à faire", dueDate: daysAgo(-40) }
+          ],
+          anomalies: [],
+          attachments: []
+        },
       ],
     },
   ],

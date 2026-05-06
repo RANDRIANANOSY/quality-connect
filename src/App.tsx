@@ -9,7 +9,6 @@ import Overview from "./pages/Overview";
 import Agencies from "./pages/Agencies";
 import AgencyDetail from "./pages/AgencyDetail";
 import Dossiers from "./pages/Dossiers";
-import Messages from "./pages/Messages";
 import Validations from "./pages/Validations";
 import Quality from "./pages/Quality";
 import Anomalies from "./pages/Anomalies";
@@ -32,7 +31,6 @@ const App = () => (
               <Route path="/agencies" element={<Agencies />} />
               <Route path="/agencies/:id" element={<AgencyDetail />} />
               <Route path="/dossiers" element={<Dossiers />} />
-              <Route path="/messages" element={<Messages />} />
               <Route path="/validations" element={<Validations />} />
               <Route path="/quality" element={<Quality />} />
               <Route path="/anomalies" element={<Anomalies />} />

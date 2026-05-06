@@ -148,43 +148,160 @@ export default function AgencyDetail() {
         </TabsContent>
 
         <TabsContent value="projects">
-          <Card>
-            <CardHeader>
-              <CardTitle>Projets en cours</CardTitle>
-              <CardDescription>Suivi de l'avancement</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Projet</TableHead>
-                    <TableHead>Client</TableHead>
-                    <TableHead className="w-40">Avancement</TableHead>
-                    <TableHead>Statut</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {a.projects.map((p) => (
-                    <TableRow key={p.id}>
-                      <TableCell className="font-medium">{p.name}</TableCell>
-                      <TableCell>{p.client}</TableCell>
-                      <TableCell>
-                        <div className="flex items-center gap-2">
-                          <Progress value={p.progress} className="h-1.5" />
-                          <span className="text-xs w-9 text-right">{p.progress}%</span>
+          <div className="space-y-4">
+            {a.projects.map((p) => (
+              <Card key={p.id}>
+                <CardHeader>
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <CardTitle className="text-lg">{p.name}</CardTitle>
+                      <CardDescription>{p.client}</CardDescription>
+                    </div>
+                    <StatusBadge tone={p.status === "terminé" ? "success" : p.status === "retard" ? "danger" : "info"} dot>
+                      {p.status}
+                    </StatusBadge>
+                  </div>
+                  <div className="grid grid-cols-2 gap-4 mt-4">
+                    <div className="text-sm">
+                      <span className="text-muted-foreground">Début:</span> {new Date(p.startDate).toLocaleDateString("fr-FR")}
+                    </div>
+                    <div className="text-sm">
+                      <span className="text-muted-foreground">Fin:</span> {new Date(p.endDate).toLocaleDateString("fr-FR")}
+                    </div>
+                  </div>
+                  <div className="mt-2">
+                    <div className="flex items-center gap-2 mb-1">
+                      <span className="text-sm text-muted-foreground">Progression</span>
+                      <span className="text-sm font-mono">{p.progress}%</span>
+                    </div>
+                    <Progress value={p.progress} className="h-2" />
+                  </div>
+                </CardHeader>
+                <CardContent className="space-y-6">
+                  {/* Dossiers */}
+                  <div>
+                    <h4 className="font-medium mb-3">Dossiers ({p.dossiers.total})</h4>
+                    <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+                      <div>
+                        <div className="text-sm text-muted-foreground">À utiliser</div>
+                        <div className="text-sm font-medium">{p.dossiers.toUse.length}</div>
+                        {p.dossiers.toUse.length > 0 && (
+                          <ul className="text-xs mt-1 space-y-1">
+                            {p.dossiers.toUse.slice(0, 3).map((d, i) => (
+                              <li key={i} className="truncate">• {d}</li>
+                            ))}
+                            {p.dossiers.toUse.length > 3 && <li className="text-muted-foreground">+{p.dossiers.toUse.length - 3} autres</li>}
+                          </ul>
+                        )}
+                      </div>
+                      <div>
+                        <div className="text-sm text-muted-foreground">Reçus</div>
+                        <div className="text-sm font-medium text-green-600">{p.dossiers.received.length}</div>
+                        {p.dossiers.received.length > 0 && (
+                          <ul className="text-xs mt-1 space-y-1">
+                            {p.dossiers.received.slice(0, 3).map((d, i) => (
+                              <li key={i} className="truncate">• {d}</li>
+                            ))}
+                            {p.dossiers.received.length > 3 && <li className="text-muted-foreground">+{p.dossiers.received.length - 3} autres</li>}
+                          </ul>
+                        )}
+                      </div>
+                      <div>
+                        <div className="text-sm text-muted-foreground">En attente</div>
+                        <div className="text-sm font-medium text-yellow-600">{p.dossiers.pending.length}</div>
+                        {p.dossiers.pending.length > 0 && (
+                          <ul className="text-xs mt-1 space-y-1">
+                            {p.dossiers.pending.slice(0, 3).map((d, i) => (
+                              <li key={i} className="truncate">• {d}</li>
+                            ))}
+                            {p.dossiers.pending.length > 3 && <li className="text-muted-foreground">+{p.dossiers.pending.length - 3} autres</li>}
+                          </ul>
+                        )}
+                      </div>
+                      <div>
+                        <div className="text-sm text-muted-foreground">En retard</div>
+                        <div className="text-sm font-medium text-orange-600">{p.dossiers.late.length}</div>
+                        {p.dossiers.late.length > 0 && (
+                          <ul className="text-xs mt-1 space-y-1">
+                            {p.dossiers.late.slice(0, 3).map((d, i) => (
+                              <li key={i} className="truncate">• {d}</li>
+                            ))}
+                            {p.dossiers.late.length > 3 && <li className="text-muted-foreground">+{p.dossiers.late.length - 3} autres</li>}
+                          </ul>
+                        )}
+                      </div>
+                      <div>
+                        <div className="text-sm text-muted-foreground">Manquants</div>
+                        <div className="text-sm font-medium text-red-600">{p.dossiers.missing.length}</div>
+                        {p.dossiers.missing.length > 0 && (
+                          <ul className="text-xs mt-1 space-y-1">
+                            {p.dossiers.missing.slice(0, 3).map((d, i) => (
+                              <li key={i} className="truncate">• {d}</li>
+                            ))}
+                            {p.dossiers.missing.length > 3 && <li className="text-muted-foreground">+{p.dossiers.missing.length - 3} autres</li>}
+                          </ul>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Tâches */}
+                  <div>
+                    <h4 className="font-medium mb-3">Tâches</h4>
+                    <div className="space-y-2">
+                      {p.tasks.map((t) => (
+                        <div key={t.id} className="flex items-center justify-between p-2 rounded-md border border-border">
+                          <div className="flex-1">
+                            <div className="text-sm font-medium">{t.name}</div>
+                            <div className="text-xs text-muted-foreground">Assigné à: {t.assignedTo}</div>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <StatusBadge tone={
+                              t.status === "terminé" ? "success" :
+                              t.status === "en cours" ? "info" : "neutral"
+                            } dot>
+                              {t.status}
+                            </StatusBadge>
+                            <div className="text-xs text-muted-foreground">
+                              Échéance: {new Date(t.dueDate).toLocaleDateString("fr-FR")}
+                            </div>
+                          </div>
                         </div>
-                      </TableCell>
-                      <TableCell>
-                        <StatusBadge tone={p.status === "terminé" ? "success" : p.status === "retard" ? "danger" : "info"} dot>
-                          {p.status}
-                        </StatusBadge>
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            </CardContent>
-          </Card>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Anomalies */}
+                  {p.anomalies.length > 0 && (
+                    <div>
+                      <h4 className="font-medium mb-3">Anomalies ({p.anomalies.length})</h4>
+                      <div className="text-sm text-muted-foreground">
+                        Voir la section Anomalies pour plus de détails
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Pièces jointes */}
+                  {p.attachments.length > 0 && (
+                    <div>
+                      <h4 className="font-medium mb-3">Pièces jointes</h4>
+                      <div className="space-y-2">
+                        {p.attachments.map((att) => (
+                          <div key={att.id} className="flex items-center justify-between p-2 rounded-md border border-border">
+                            <div className="flex items-center gap-2">
+                              <div className="text-sm font-medium">{att.name}</div>
+                              <div className="text-xs text-muted-foreground uppercase">{att.type}</div>
+                            </div>
+                            <div className="text-xs text-muted-foreground">{att.size}</div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+            ))}
+          </div>
         </TabsContent>
 
         <TabsContent value="members">
