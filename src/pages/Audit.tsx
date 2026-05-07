@@ -45,9 +45,11 @@ export default function Audit() {
   };
 
   const cleanup = () => {
-    store.auditLogs = store.auditLogs.slice(0, 3);
+    const cutoff = Date.now() - 30 * 86400000;
+    const before = store.auditLogs.length;
+    store.auditLogs = store.auditLogs.filter((l) => new Date(l.date).getTime() >= cutoff);
     notify();
-    toast.success("Historique nettoyé");
+    toast.success(`Historique nettoyé`, { description: `${before - store.auditLogs.length} entrée(s) supprimée(s) (>30j).` });
     setConfirmClean(false);
   };
 
@@ -130,7 +132,7 @@ export default function Audit() {
           <AlertDialogHeader>
             <AlertDialogTitle>Nettoyer l'historique ?</AlertDialogTitle>
             <AlertDialogDescription>
-              Tous les logs antérieurs seront supprimés (seuls les 3 plus récents sont conservés). Cette action est définitive.
+              Les évènements de plus de 30 jours seront supprimés. Cette action est définitive.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>

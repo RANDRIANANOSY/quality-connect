@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import { Checkbox } from "@/components/ui/checkbox";
 import { StatusBadge } from "@/components/StatusBadge";
-import { store, notify, logAudit } from "@/data/store";
+import { store, notify, logAudit, uid, nowIso, Region } from "@/data/store";
 import { useStore } from "@/data/useStore";
 
 export default function Quality() {
@@ -17,6 +17,7 @@ export default function Quality() {
     const item = q.items.find((i) => i.id === itemId);
     if (item) {
       item.checked = !item.checked;
+      logAudit({ user: "Admin", action: item.checked ? "a coché un contrôle" : "a décoché un contrôle", target: `${q.region} — ${item.label}`, category: "modification" });
       notify();
     }
   };
@@ -30,8 +31,28 @@ export default function Quality() {
     toast.success(`Contrôle qualité validé pour ${q.region}`);
   };
 
-  const reportIssue = (region: string) => {
-    toast.warning(`Problème signalé`, { description: `Région ${region} — un audit complémentaire sera planifié.` });
+  const reportIssue = (region: Region) => {
+    store.anomalies.unshift({
+      id: uid(),
+      type: `Problème contrôle qualité`,
+      category: "comptable",
+      dossier: `Contrôle qualité ${region}`,
+      client: "—",
+      mission: `Contrôle qualité ${region}`,
+      region,
+      severity: "moyen",
+      status: "ouverte",
+      assignedTo: "Admin",
+      date: nowIso(),
+      startDate: nowIso(),
+      description: `Problème signalé depuis le contrôle qualité de la région ${region}.`,
+      attachments: [],
+      timeline: [{ id: uid(), date: nowIso(), author: "Admin", action: "Anomalie créée depuis Contrôle qualité" }],
+      comments: [],
+    });
+    logAudit({ user: "Admin", action: "a signalé un problème qualité", target: region, category: "création" });
+    notify();
+    toast.warning(`Problème signalé`, { description: `Une anomalie a été créée pour ${region}.` });
   };
 
   return (

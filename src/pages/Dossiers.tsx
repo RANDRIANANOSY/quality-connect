@@ -154,7 +154,7 @@ export default function Dossiers() {
                     </TableCell>
                     <TableCell>{d.client}</TableCell>
                     <TableCell><StatusBadge tone="info">{d.region}</StatusBadge></TableCell>
-                    <TableCell><div className="flex gap-1">{d.agencies.map((a) => <span key={a} className="text-xs px-1.5 py-0.5 rounded bg-secondary">{a.toUpperCase()}</span>)}</div></TableCell>
+                    <TableCell><div className="flex flex-wrap gap-1">{d.agencies.map((id) => { const ag = store.agencies.find((a) => a.id === id); return <span key={id} className="text-xs px-1.5 py-0.5 rounded bg-secondary">{ag?.name?.split(" ").slice(-1)[0] || id.toUpperCase()}</span>; })}</div></TableCell>
                     <TableCell className="text-xs">{format(new Date(d.sharedAt), "dd MMM yyyy", { locale: fr })}</TableCell>
                     <TableCell><StatusBadge tone={d.status === "partagé" ? "success" : d.status === "privé" ? "warning" : "neutral"} dot>{d.status}</StatusBadge></TableCell>
                     <TableCell className="text-right">

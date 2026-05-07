@@ -7,6 +7,7 @@ import {
   ShieldCheck,
   AlertTriangle,
   ScrollText,
+  MessageSquare,
   Settings,
   Sparkles,
 } from "lucide-react";
@@ -16,6 +17,7 @@ const items = [
   { to: "/", icon: LayoutDashboard, label: "Vue d'ensemble" },
   { to: "/agencies", icon: Building2, label: "Multi-agences" },
   { to: "/dossiers", icon: FolderKanban, label: "Dossiers partagés" },
+  { to: "/messages", icon: MessageSquare, label: "Messages" },
   { to: "/validations", icon: CheckCircle2, label: "Validations" },
   { to: "/quality", icon: ShieldCheck, label: "Contrôle qualité" },
   { to: "/anomalies", icon: AlertTriangle, label: "Anomalies" },
