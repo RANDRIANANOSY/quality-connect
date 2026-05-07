@@ -13,6 +13,7 @@ import Validations from "./pages/Validations";
 import Quality from "./pages/Quality";
 import Anomalies from "./pages/Anomalies";
 import Audit from "./pages/Audit";
+import Messages from "./pages/Messages";
 import Settings from "./pages/Settings";
 import NotFound from "./pages/NotFound";
 
@@ -35,6 +36,7 @@ const App = () => (
               <Route path="/quality" element={<Quality />} />
               <Route path="/anomalies" element={<Anomalies />} />
               <Route path="/audit" element={<Audit />} />
+              <Route path="/messages" element={<Messages />} />
               <Route path="/settings" element={<Settings />} />
             </Route>
             <Route path="*" element={<NotFound />} />
